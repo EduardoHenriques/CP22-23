@@ -6,4 +6,4 @@ MEI - Projeto da UC de Computação Paralela
 | Nome                            | Nº      |
 | ------------------------------- | ------- |
 | Eduardo Fernando Cruz Henriques | A93186  |
-| Pedro Ricardo Quinteiro Freitas | PGxxxxx |
+| Pedro Ricardo Quinteiro Freitas | PG52700 |
