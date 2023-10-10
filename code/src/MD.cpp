@@ -361,7 +361,7 @@ int main()
     return 0;
 }
 
-
+//ALTERADA - TODOS OS CICLOS CONDICIONADOS POR P>N, NAO SO CICLO INTERIOR
 void initialize() {
     int n, p, i, j, k;
     double pos;
@@ -374,18 +374,23 @@ void initialize() {
     
     //  index for number of particles assigned positions
     p = 0;
-    //  initialize positions
-    for (i=0; i<n; i++) {
-        for (j=0; j<n; j++) {
-            for (k=0; k<n; k++) {
-                if (p<N) {
-                    
-                    r[p][0] = (i + 0.5)*pos;
-                    r[p][1] = (j + 0.5)*pos;
-                    r[p][2] = (k + 0.5)*pos;
-                }
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
+            for (k = 0; k < n; k++) {
+                r[p][0] = (i + 0.5) * pos;
+                r[p][1] = (j + 0.5) * pos;
+                r[p][2] = (k + 0.5) * pos;
                 p++;
+                if (p >= N) {
+                    break;
+                }
             }
+            if (p >= N) {
+                break;
+            }
+        }
+        if (p >= N) {
+            break;
         }
     }
     
@@ -404,25 +409,36 @@ void initialize() {
      printf("  %6.3e  %6.3e  %6.3e\n",v[i][0],v[i][1],v[i][2]);
      }
      */
-    
-    
-    
 }   
 
-
+//ALTERAMOS CURR_VX, CURR_VY, CURR_VZ
 //  Function to calculate the averaged velocity squared
 double MeanSquaredVelocity() { 
     
     double vx2 = 0;
     double vy2 = 0;
     double vz2 = 0;
+
+    // CHANGE - adicionar variaveis intermedias para guardar o resultado
+    double curr_vx, curr_vy, curr_vz;
+
     double v2;
     
     for (int i=0; i<N; i++) {
         
-        vx2 = vx2 + v[i][0]*v[i][0];
-        vy2 = vy2 + v[i][1]*v[i][1];
-        vz2 = vz2 + v[i][2]*v[i][2];
+        //CHANGE
+        curr_vx = v[i][0];
+        curr_vy = v[i][1];
+        curr_vz = v[i][2];
+
+        vx2 += curr_vx * curr_vx;
+        vy2 += curr_vy * curr_vy;
+        vz2 += curr_vz * curr_vz; 
+
+        //REMOVED - ORIGINAL
+        //vx2 = vx2 + v[i][0]*v[i][0];
+        //vy2 = vy2 + v[i][1]*v[i][1];
+        //vz2 = vz2 + v[i][2]*v[i][2];
         
     }
     v2 = (vx2+vy2+vz2)/N;
@@ -432,11 +448,14 @@ double MeanSquaredVelocity() {
     return v2;
 }
 
+//ALTERAMOS HALF_M
 //  Function to calculate the kinetic energy of the system
 double Kinetic() { //Write Function here!  
     
     double v2, kin;
-    
+    double half_m = m/2.0;
+
+
     kin =0.;
     for (int i=0; i<N; i++) {
         
@@ -446,7 +465,7 @@ double Kinetic() { //Write Function here!
             v2 += v[i][j]*v[i][j];
             
         }
-        kin += m*v2/2.;
+        kin += half_m * v2;
         
     }
     
@@ -455,34 +474,35 @@ double Kinetic() { //Write Function here!
     
 }
 
-
+//ALTERADA
 // Function to calculate the potential energy of the system
 double Potential() {
-    double quot, r2, rnorm, term1, term2, Pot;
+
+    double quot, r2, rnorm, term1, term2, Pot, dr;
     int i, j, k;
-    
-    Pot=0.;
-    for (i=0; i<N; i++) {
-        for (j=0; j<N; j++) {
-            
-            if (j!=i) {
-                r2=0.;
-                for (k=0; k<3; k++) {
-                    r2 += (r[i][k]-r[j][k])*(r[i][k]-r[j][k]);
-                }
-                rnorm=sqrt(r2);
-                quot=sigma/rnorm;
-                term1 = pow(quot,12.);
-                term2 = pow(quot,6.);
-                
-                Pot += 4*epsilon*(term1 - term2);
-                
+
+    double factor = epsilon *4;
+    Pot = 0.;
+
+    for (i = 0; i < N; i++) {
+        for (j = i + 1; j < N; j++) {
+            r2 = 0.0;
+            for (k = 0; k < 3; k++) {
+                dr = r[i][k] - r[j][k];
+                r2 += dr * dr;
             }
+            double rnorm = sqrt(r2);
+            double quot = sigma / rnorm;
+            double term1 = pow(quot, 12.0);
+            double term2 = pow(quot, 6.0);
+            Pot += factor * (term1 - term2);
         }
     }
-    
+
     return Pot;
 }
+    
+
 
 
 

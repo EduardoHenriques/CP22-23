@@ -1,6 +1,6 @@
 CC = gcc
 SRC = src/
-CFLAGS = -pg -O2
+CFLAGS = -pg -Ofast -funroll-loops -frename-registers
 
 .DEFAULT_GOAL = MD.exe
 
