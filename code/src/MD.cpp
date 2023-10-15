@@ -27,6 +27,7 @@
 #include<stdlib.h>
 #include<math.h>
 #include<string.h>
+#include <immintrin.h>
 
 
 // Number of particles
@@ -83,7 +84,7 @@ double Kinetic();
 
 int main()
 {
-    
+   
     //  variable delcarations
     int i;
     double dt, Vol, Temp, Press, Pavg, Tavg, rho;
@@ -97,12 +98,12 @@ int main()
     printf("                  WELCOME TO WILLY P CHEM MD!\n");
     printf("  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
     printf("\n  ENTER A TITLE FOR YOUR CALCULATION!\n");
-    scanf("%s",prefix);
-    strcpy(tfn,prefix);
+    //scanf("%s",prefix);
+    strcpy(tfn,"teste");
     strcat(tfn,"_traj.xyz");
-    strcpy(ofn,prefix);
+    strcpy(ofn,"teste");
     strcat(ofn,"_output.txt");
-    strcpy(afn,prefix);
+    strcpy(afn,"teste");
     strcat(afn,"_average.txt");
     
     printf("\n  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
@@ -135,7 +136,8 @@ int main()
     printf("  FOR KRYPTON, TYPE 'Kr' THEN PRESS 'return' TO CONTINUE\n");
     printf("  FOR XENON,   TYPE 'Xe' THEN PRESS 'return' TO CONTINUE\n");
     printf("  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-    scanf("%s",atype);
+    //scanf("%s",atype);
+    strcpy(atype,"Ar"); 
     
     if (strcmp(atype,"He")==0) {
         
@@ -195,7 +197,8 @@ int main()
     printf("\n  YOU WILL NOW ENTER A FEW SIMULATION PARAMETERS\n");
     printf("  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
     printf("\n\n  ENTER THE INTIAL TEMPERATURE OF YOUR GAS IN KELVIN\n");
-    scanf("%lf",&Tinit);
+    //scanf("%lf",&Tinit);
+    Tinit = 100.;
     // Make sure temperature is a positive number!
     if (Tinit<0.) {
         printf("\n  !!!!! ABSOLUTE TEMPERATURE MUST BE A POSITIVE NUMBER!  PLEASE TRY AGAIN WITH A POSITIVE TEMPERATURE!!!\n");
@@ -209,7 +212,8 @@ int main()
     printf("  FOR REFERENCE, NUMBER DENSITY OF AN IDEAL GAS AT STP IS ABOUT 40 moles/m^3\n");
     printf("  NUMBER DENSITY OF LIQUID ARGON AT 1 ATM AND 87 K IS ABOUT 35000 moles/m^3\n");
     
-    scanf("%lf",&rho);
+    //scanf("%lf",&rho);
+    rho = 35000.;
     
     N = 10*216;
     Vol = N/(rho*NA);
@@ -246,7 +250,7 @@ int main()
     
     int NumTime;
     if (strcmp(atype,"He")==0) {
-        
+         
         // dt in natural units of time s.t. in SI it is 5 f.s. for all other gasses
         dt = 0.2e-14/timefac;
         //  We will run the simulation for NumTime timesteps.
@@ -346,7 +350,7 @@ int main()
     printf("\n  AVERAGE TEMPERATURE (K):                 %15.5f\n",Tavg);
     printf("\n  AVERAGE PRESSURE  (Pa):                  %15.5f\n",Pavg);
     printf("\n  PV/nT (J * mol^-1 K^-1):                 %15.5f\n",gc);
-    printf("\n  PERCENT ERROR of pV/nT AND GAS CONSTANT: %15.5f\n",100*fabs(gc-8.3144598)/8.3144598);
+    printf("\n  PERC#include <immintrin.h>ENT ERROR of pV/nT AND GAS CONSTANT: %15.5f\n",100*fabs(gc-8.3144598)/8.3144598);
     printf("\n  THE COMPRESSIBILITY (unitless):          %15.5f \n",Z);
     printf("\n  TOTAL VOLUME (m^3):                      %10.5e \n",Vol*VolFac);
     printf("\n  NUMBER OF PARTICLES (unitless):          %i \n", N);
@@ -361,7 +365,7 @@ int main()
     return 0;
 }
 
-//ALTERADA - TODOS OS CICLOS CONDICIONADOS POR P>N, NAO SO CICLO INTERIOR
+
 void initialize() {
     int n, p, i, j, k;
     double pos;
@@ -374,23 +378,18 @@ void initialize() {
     
     //  index for number of particles assigned positions
     p = 0;
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < n; j++) {
-            for (k = 0; k < n; k++) {
-                r[p][0] = (i + 0.5) * pos;
-                r[p][1] = (j + 0.5) * pos;
-                r[p][2] = (k + 0.5) * pos;
-                p++;
-                if (p >= N) {
-                    break;
+    //  initialize positions
+    for (i=0; i<n; i++) {
+        for (j=0; j<n; j++) {
+            for (k=0; k<n; k++) {
+                if (p<N) {
+                    
+                    r[p][0] = (i + 0.5)*pos;
+                    r[p][1] = (j + 0.5)*pos;
+                    r[p][2] = (k + 0.5)*pos;
                 }
+                p++;
             }
-            if (p >= N) {
-                break;
-            }
-        }
-        if (p >= N) {
-            break;
         }
     }
     
@@ -409,36 +408,25 @@ void initialize() {
      printf("  %6.3e  %6.3e  %6.3e\n",v[i][0],v[i][1],v[i][2]);
      }
      */
+    
+    
+    
 }   
 
-//ALTERAMOS CURR_VX, CURR_VY, CURR_VZ
+
 //  Function to calculate the averaged velocity squared
 double MeanSquaredVelocity() { 
     
     double vx2 = 0;
     double vy2 = 0;
     double vz2 = 0;
-
-    // CHANGE - adicionar variaveis intermedias para guardar o resultado
-    double curr_vx, curr_vy, curr_vz;
-
     double v2;
     
     for (int i=0; i<N; i++) {
         
-        //CHANGE
-        curr_vx = v[i][0];
-        curr_vy = v[i][1];
-        curr_vz = v[i][2];
-
-        vx2 += curr_vx * curr_vx;
-        vy2 += curr_vy * curr_vy;
-        vz2 += curr_vz * curr_vz; 
-
-        //REMOVED - ORIGINAL
-        //vx2 = vx2 + v[i][0]*v[i][0];
-        //vy2 = vy2 + v[i][1]*v[i][1];
-        //vz2 = vz2 + v[i][2]*v[i][2];
+        vx2 = vx2 + v[i][0]*v[i][0];
+        vy2 = vy2 + v[i][1]*v[i][1];
+        vz2 = vz2 + v[i][2]*v[i][2];
         
     }
     v2 = (vx2+vy2+vz2)/N;
@@ -448,14 +436,11 @@ double MeanSquaredVelocity() {
     return v2;
 }
 
-//ALTERAMOS HALF_M
 //  Function to calculate the kinetic energy of the system
 double Kinetic() { //Write Function here!  
     
     double v2, kin;
-    double half_m = m/2.0;
-
-
+    
     kin =0.;
     for (int i=0; i<N; i++) {
         
@@ -465,7 +450,7 @@ double Kinetic() { //Write Function here!
             v2 += v[i][j]*v[i][j];
             
         }
-        kin += half_m * v2;
+        kin += m*v2/2.;
         
     }
     
@@ -474,35 +459,34 @@ double Kinetic() { //Write Function here!
     
 }
 
-//ALTERADA
+
 // Function to calculate the potential energy of the system
 double Potential() {
-
-    double quot, r2, rnorm, term1, term2, Pot, dr;
+    double quot, r2, rnorm, term1, term2, Pot, diff;
     int i, j, k;
+    double epsilon4 = 4. * epsilon;
 
-    double factor = epsilon *4;
-    Pot = 0.;
-
+    Pot=0.;
+    for (j = 0; j < N; j++) {
     for (i = 0; i < N; i++) {
-        for (j = i + 1; j < N; j++) {
+            if (j != i){
             r2 = 0.0;
             for (k = 0; k < 3; k++) {
-                dr = r[i][k] - r[j][k];
-                r2 += dr * dr;
+                diff = r[i][k] - r[j][k];
+                r2 += diff * diff;
             }
-            double rnorm = sqrt(r2);
-            double quot = sigma / rnorm;
-            double term1 = pow(quot, 12.0);
-            double term2 = pow(quot, 6.0);
-            Pot += factor * (term1 - term2);
+                quot=sigma/r2;
+                term2 = quot * quot * quot;
+                term1 = term2 * term2;
+                
+                Pot += epsilon4*(term1 - term2);
+            }     
+            
         }
     }
-
+    
     return Pot;
 }
-    
-
 
 
 
@@ -513,7 +497,7 @@ void computeAccelerations() {
     int i, j, k;
     double f, rSqd;
     double rij[3]; // position of i relative to j
-    
+    double rev_rsqd, rsqd3;
     
     for (i = 0; i < N; i++) {  // set all accelerations to zero
         for (k = 0; k < 3; k++) {
@@ -523,7 +507,7 @@ void computeAccelerations() {
     for (i = 0; i < N-1; i++) {   // loop over all distinct pairs i,j
         for (j = i+1; j < N; j++) {
             // initialize r^2 to zero
-            rSqd = 0;
+            rSqd = 0.;
             
             for (k = 0; k < 3; k++) {
                 //  component-by-componenent position of i relative to j
@@ -533,10 +517,14 @@ void computeAccelerations() {
             }
             
             //  From derivative of Lennard-Jones with sigma and epsilon set equal to 1 in natural units!
-            f = 24 * (2 * pow(rSqd, -7) - pow(rSqd, -4));
+            rev_rsqd = 1/rSqd;
+            rsqd3 = rev_rsqd * rev_rsqd * rev_rsqd;
+
+            f = 24 * (rsqd3 * rev_rsqd) * (2 * (rsqd3) - 1);
             for (k = 0; k < 3; k++) {
                 //  from F = ma, where m = 1 in natural units!
                 a[i][k] += rij[k] * f;
+
                 a[j][k] -= rij[k] * f;
             }
         }
@@ -557,7 +545,6 @@ double VelocityVerlet(double dt, int iter, FILE *fp) {
     for (i=0; i<N; i++) {
         for (j=0; j<3; j++) {
             r[i][j] += v[i][j]*dt + 0.5*a[i][j]*dt*dt;
-            
             v[i][j] += 0.5*a[i][j]*dt;
         }
         //printf("  %i  %6.4e   %6.4e   %6.4e\n",i,r[i][0],r[i][1],r[i][2]);
@@ -606,11 +593,13 @@ void initializeVelocities() {
     
     for (i=0; i<N; i++) {
         
-        for (j=0; j<3; j++) {
+        //for (j=0; j<3; j++) {
             //  Pull a number from a Gaussian Distribution
-            v[i][j] = gaussdist();
+            v[i][0] = gaussdist();
+            v[i][1] = gaussdist();
+            v[i][2] = gaussdist();
             
-        }
+        //}
     }
     
     // Vcm = sum_i^N  m*v_i/  sum_i^N  M
@@ -633,11 +622,13 @@ void initializeVelocities() {
     //  center of mass velocity to zero so that the system does
     //  not drift in space!
     for (i=0; i<N; i++) {
-        for (j=0; j<3; j++) {
+        //for (j=0; j<3; j++) {
             
-            v[i][j] -= vCM[j];
+            v[i][0] -= vCM[0];
+            v[i][1] -= vCM[1];
+            v[i][2] -= vCM[2];
             
-        }
+        //}
     }
     
     //  Now we want to scale the average velocity of the system
@@ -646,9 +637,7 @@ void initializeVelocities() {
     vSqdSum=0.;
     for (i=0; i<N; i++) {
         for (j=0; j<3; j++) {
-            
             vSqdSum += v[i][j]*v[i][j];
-            
         }
     }
     
