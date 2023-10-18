@@ -464,12 +464,11 @@ double Kinetic() { //Write Function here!
 double Potential() {
     double quot, r2, rnorm, term1, term2, Pot, diff;
     int i, j, k;
-    double epsilon4 = 4. * epsilon;
+    double epsilon4 = 4.0 * epsilon;
 
     Pot=0.;
-    for (j = 0; j < N; j++) {
     for (i = 0; i < N; i++) {
-            if (j != i){
+    for (j = i+1; j < N; j++) {
             r2 = 0.0;
             for (k = 0; k < 3; k++) {
                 diff = r[i][k] - r[j][k];
@@ -479,8 +478,8 @@ double Potential() {
                 term2 = quot * quot * quot;
                 term1 = term2 * term2;
                 
-                Pot += epsilon4*(term1 - term2);
-            }     
+                Pot += ((epsilon4*(term1 - term2))*2);
+                 
             
         }
     }
@@ -495,15 +494,15 @@ double Potential() {
 //   accelleration of each atom. 
 void computeAccelerations() {
     int i, j, k;
-    double f, rSqd;
+    double f, rSqd,rev_rsqd, rsqd3, const_24;
     double rij[3]; // position of i relative to j
-    double rev_rsqd, rsqd3;
-    
+    const_24 = 24.0;
     for (i = 0; i < N; i++) {  // set all accelerations to zero
         for (k = 0; k < 3; k++) {
             a[i][k] = 0;
         }
     }
+
     for (i = 0; i < N-1; i++) {   // loop over all distinct pairs i,j
         for (j = i+1; j < N; j++) {
             // initialize r^2 to zero
@@ -520,7 +519,7 @@ void computeAccelerations() {
             rev_rsqd = 1/rSqd;
             rsqd3 = rev_rsqd * rev_rsqd * rev_rsqd;
 
-            f = 24 * (rsqd3 * rev_rsqd) * (2 * (rsqd3) - 1);
+            f = const_24 * (rsqd3 * rev_rsqd) * (2.0 * (rsqd3) - 1.0);
             for (k = 0; k < 3; k++) {
                 //  from F = ma, where m = 1 in natural units!
                 a[i][k] += rij[k] * f;
