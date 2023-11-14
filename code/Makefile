@@ -1,14 +1,24 @@
 CC = gcc
 SRC = src/
-CFLAGS = -pg -Ofast -funroll-loops -frename-registers
+CFLAGS = -fopenmp -Ofast -march=native -fno-signed-zeros -ffp-contract=fast -ftree-vectorize -mavx
 
-.DEFAULT_GOAL = MD.exe
+.DEFAULT_GOAL = all
 
-MD.exe: $(SRC)/MD.cpp
-	$(CC) $(CFLAGS) $(SRC)MD.cpp -lm -o MD.exe
+all: MDpar.exe MDseq.exe
+
+MDpar.exe: $(SRC)/MDpar.cpp
+	module load gcc/11.2.0;
+	$(CC) $(CFLAGS) $(SRC)MDpar.cpp -lm -fopenmp -o MDpar.exe
+
+MDseq.exe: $(SRC)/MDseq.cpp
+	module load gcc/11.2.0;
+	$(CC) $(CFLAGS) $(SRC)MDseq.cpp -lm -fopenmp -o MDseq.exe
 
 clean:
-	rm ./MD.exe
+	rm ./MD*.exe
 
-run:
-	./MD.exe < inputdata.txt
+runseq:
+	./MDseq.exe < inputdata.txt
+
+runpar:
+	./MDpar.exe < inputdata.txt
