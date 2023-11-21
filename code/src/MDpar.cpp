@@ -104,11 +104,11 @@ int main()
     printf("  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
     printf("\n  ENTER A TITLE FOR YOUR CALCULATION!\n");
     scanf("%s",prefix);
-    //strcpy(tfn,"teste");
+    strcpy(tfn,prefix);
     strcat(tfn,"_traj.xyz");
-    strcpy(ofn,"teste");
+    strcpy(ofn,prefix);
     strcat(ofn,"_output.txt");
-    strcpy(afn,"teste");
+    strcpy(afn,prefix);
     strcat(afn,"_average.txt");
     
     printf("\n  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
@@ -397,7 +397,6 @@ void initialize() {
             }
         }
     }
-    
     // Call function to initialize velocities
     initializeVelocities();
     
@@ -509,8 +508,8 @@ void computeAccelerations_and_Potential()
         }
     }
 
-    #pragma omp parallel num_threads(8)
-    #pragma omp for reduction(+:current_Potential)
+    #pragma omp parallel 
+    #pragma omp for reduction(+:current_Potential) 
     for (i = 0; i < N-1; i++) {
          double my_f, my_rSqd,my_rev_rsqd, my_rsqd3; 
          double my_quot, my_r2, my_rnorm, my_term1, my_term2, my_diff;
@@ -535,15 +534,14 @@ void computeAccelerations_and_Potential()
             my_rev_rsqd = 1/my_rSqd;
             my_rsqd3 = my_rev_rsqd * my_rev_rsqd * my_rev_rsqd;
             my_f = 24.0 * (my_rsqd3 * my_rev_rsqd) * (2.0 * (my_rsqd3) - 1.0);
-
+                //#pragma simd
                 for (my_k = 0; my_k < 3; my_k++) {
                     double curr_a = my_rij[my_k] * my_f;                    
                     //  from F = ma, where m = 1 in natural units!
-                    #pragma omp critical
-                    {
+                    #pragma omp atomic
                     a[i][my_k] += curr_a;
+                    #pragma omp atomic
                     a[j][my_k] -= curr_a;
-                    }
                     
                     //CALCULAR R2 PARA POTENCIAL
                     my_diff = r[i][my_k] - r[j][my_k];
@@ -552,6 +550,7 @@ void computeAccelerations_and_Potential()
             my_quot=sigma * (1/my_r2);
             my_term2 = my_quot * my_quot * my_quot;
             my_term1 = my_term2 * my_term2;
+
             current_Potential += ((epsilon4*(my_term1 - my_term2))*2);
             
         }
