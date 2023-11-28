@@ -30,8 +30,6 @@
 #include <omp.h>
 #include <immintrin.h>
 
-//chunk size for dynamic scheduling
-int chunk_size;
 
 // Number of particles
 int N;
@@ -105,12 +103,12 @@ int main()
     printf("                  WELCOME TO WILLY P CHEM MD!\n");
     printf("  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
     printf("\n  ENTER A TITLE FOR YOUR CALCULATION!\n");
-    scanf("%s",prefix);
-    strcpy(tfn,prefix);
+    //scanf("%s",prefix);
+    strcpy(tfn,"teste");
     strcat(tfn,"_traj.xyz");
-    strcpy(ofn,prefix);
+    strcpy(ofn,"teste");
     strcat(ofn,"_output.txt");
-    strcpy(afn,prefix);
+    strcpy(afn,"teste");
     strcat(afn,"_average.txt");
     
     printf("\n  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
@@ -143,8 +141,8 @@ int main()
     printf("  FOR KRYPTON, TYPE 'Kr' THEN PRESS 'return' TO CONTINUE\n");
     printf("  FOR XENON,   TYPE 'Xe' THEN PRESS 'return' TO CONTINUE\n");
     printf("  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-    scanf("%s",atype);
-    //strcpy(atype,"Ar"); 
+    //scanf("%s",atype);
+    strcpy(atype,"Ar"); 
     
     if (strcmp(atype,"He")==0) {
         
@@ -204,8 +202,8 @@ int main()
     printf("\n  YOU WILL NOW ENTER A FEW SIMULATION PARAMETERS\n");
     printf("  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
     printf("\n\n  ENTER THE INTIAL TEMPERATURE OF YOUR GAS IN KELVIN\n");
-    scanf("%lf",&Tinit);
-    //Tinit = 100.;
+    //scanf("%lf",&Tinit);
+    Tinit = 100.;
     // Make sure temperature is a positive number!
     if (Tinit<0.) {
         printf("\n  !!!!! ABSOLUTE TEMPERATURE MUST BE A POSITIVE NUMBER!  PLEASE TRY AGAIN WITH A POSITIVE TEMPERATURE!!!\n");
@@ -219,10 +217,10 @@ int main()
     printf("  FOR REFERENCE, NUMBER DENSITY OF AN IDEAL GAS AT STP IS ABOUT 40 moles/m^3\n");
     printf("  NUMBER DENSITY OF LIQUID ARGON AT 1 ATM AND 87 K IS ABOUT 35000 moles/m^3\n");
     
-    scanf("%lf",&rho);
-    //rho = 35000.;
+    //scanf("%lf",&rho);
+    rho = 35000.;
     
-    N = 5000;//10*216;
+    N = 10*216;
     Vol = N/(rho*NA);
     
     Vol /= VolFac;
@@ -278,8 +276,8 @@ int main()
     //  Based on their positions, calculate the ininial intermolecular forces
     //  The accellerations of each particle will be defined from the forces and their
     //  mass, and this will allow us to update their positions via Newton's law
-    computeAccelerations_and_Potential();
-    //computeAccelerations();
+    //computeAccelerations_and_Potential();
+    computeAccelerations();
     
     // Print number of particles to the trajectory file
     fprintf(tfp,"%i\n",N);
@@ -322,8 +320,8 @@ int main()
         //  We would also like to use the IGL to try to see if we can extract the gas constant
         mvs = MeanSquaredVelocity();
         KE = Kinetic();
-        PE = current_Potential;
-        //PE = Potential();
+        //PE = current_Potential;
+        PE = Potential();
         // Temperature from Kinetic Theory
         Temp = m*mvs/(3*kB) * TempFac;
         
@@ -336,7 +334,7 @@ int main()
         Tavg += Temp;
         Pavg += Press;
         
-        fprintf(ofp,"  %8.4e  %20.12f  %20.12f %20.12f  %20.12f  %20.12f \n",i*dt*timefac,Temp,Press,KE, PE, KE+PE);
+        fprintf(ofp,"  %8.4e  %20.8f  %20.8f %20.8f  %20.8f  %20.8f \n",i*dt*timefac,Temp,Press,KE, PE, KE+PE);
         
         
     }
@@ -376,7 +374,7 @@ int main()
 void initialize() {
     int n, p, i, j, k;
     double pos;
-    chunk_size = N / omp_get_max_threads();
+    
     // Number of atoms in each direction
     n = int(ceil(pow(N, 1.0/3)));
     
@@ -399,6 +397,7 @@ void initialize() {
             }
         }
     }
+    
     // Call function to initialize velocities
     initializeVelocities();
     
@@ -494,75 +493,64 @@ double Potential() {
 
 void computeAccelerations_and_Potential()
 {
-    int i,k;
+    int i, j, k;
     //acceleration variables
-    //double f, rSqd,rev_rsqd, rsqd3;
-    //double rij[3]; // position of i relative to j
+    double f, rSqd,rev_rsqd, rsqd3;
+    double rij[3]; // position of i relative to j
     //potential variables
-    //double quot, r2, rnorm, term1, term2, Pot, diff;
+    double quot, r2, rnorm, term1, term2, Pot, diff;
     double epsilon4 = 4.0 * epsilon;
-    double b[MAXPART][3];
+    #pragma omp parallel num_threads(8)
+    {
+    {
     current_Potential = 0.; //reset potential for this iteration
-    //# pragma omp for
+    # pragma omp for
     for (i = 0; i < N; i++) {  // set all accelerations to zero
         for (k = 0; k < 3; k++) {
-            a[i][k] = 0.;
-            b[i][k] = 0.;
+            a[i][k] = 0;
         }
     }
-    
-    #pragma omp parallel firstprivate(b)
-    {
-    #pragma omp scheduled(dynamic, chunk_size)
-    #pragma omp for reduction(+:current_Potential) 
+    }
+
+    #pragma omp for private (i, j, k, rSqd, r2, rij, rev_rsqd, rsqd3, f, diff, quot, term2, term1)
     for (i = 0; i < N-1; i++) {
-         double my_f, my_rSqd,my_rev_rsqd, my_rsqd3; 
-         double my_quot, my_r2, my_rnorm, my_term1, my_term2, my_diff;
-         double my_rij[3];
-         int j;
         for (j = i+1; j < N; j++) {
-            int my_k = 0;
-            my_rSqd = 0.;
-            my_r2 = 0.;
+            // COMPUTING ACCELERATIONS //
 
-            #pragma simd
-            for (my_k = 0; my_k < 3; my_k++) {
-                my_rij[my_k] = r[i][my_k] - r[j][my_k];
-                my_rSqd += my_rij[my_k] * my_rij[my_k];
-
-                //CALCULAR R2 PARA POTENCIAL
-                my_diff = r[i][my_k] - r[j][my_k];
-                my_r2 += my_diff * my_diff;
+            // initialize sqd to zero
+            rSqd = 0.;
+            //initialize r^2 to zero
+            r2 = 0.0;
+            for (k = 0; k < 3; k++) {
+                //  component-by-componenent position of i relative to j
+                rij[k] = r[i][k] - r[j][k];
+                //  sum of squares of the components
+                rSqd += rij[k] * rij[k];
             }
-
-            my_rev_rsqd = 1/my_rSqd;
-            my_rsqd3 = my_rev_rsqd * my_rev_rsqd * my_rev_rsqd;
-            my_f = 24.0 * (my_rsqd3 * my_rev_rsqd) * (2.0 * (my_rsqd3) - 1.0);
             
-            #pragma omp simd
-            for (my_k = 0; my_k < 3; my_k++) {
-                double curr_a = my_rij[my_k] * my_f;                    
-                //  from F = ma, where m = 1 in natural units!
-                b[i][my_k] += curr_a;
-                b[j][my_k] -= curr_a;
-            }
+            //  From derivative of Lennard-Jones with sigma and epsilon set equal to 1 in natural units!
+            rev_rsqd = 1/rSqd;
+            rsqd3 = rev_rsqd * rev_rsqd * rev_rsqd;
 
-            my_quot=sigma * (1/my_r2);
-            my_term2 = my_quot * my_quot * my_quot;
-            my_term1 = my_term2 * my_term2;
-            current_Potential += ((epsilon4*(my_term1 - my_term2))*2);
+            f = 24.0 * (rsqd3 * rev_rsqd) * (2.0 * (rsqd3) - 1.0);
+            for (k = 0; k < 3; k++) {
+                //  from F = ma, where m = 1 in natural units!
+                a[i][k] += rij[k] * f;
+
+                a[j][k] -= rij[k] * f;
+                //CALCULAR R2 PARA POTENCIAL
+                diff = r[i][k] - r[j][k];
+                r2 += diff * diff;
+            }
+            quot=sigma * (1/r2);
+            term2 = quot * quot * quot;
+            term1 = term2 * term2;
+            #pragma omp atomic
+            current_Potential += ((epsilon4*(term1 - term2))*2);
         }
-    }
-    #pragma omp critical
-    {
-    for(i=0;i<N;i++)
-        for(k=0;k<3;k++)
-            a[i][k] += b[i][k];
-    }
     }
 }
-
-
+}
 
 
 //   Uses the derivative of the Lennard-Jones potential to calculate
@@ -603,7 +591,9 @@ void computeAccelerations() {
             for (k = 0; k < 3; k++) {
                 double accel = rij[k] * f;
                 //  from F = ma, where m = 1 in natural units!
+                #pragma omp atomic
                 a[i][k] += accel;
+                #pragma omp atomic
                 a[j][k] -= accel;
             }
         }
